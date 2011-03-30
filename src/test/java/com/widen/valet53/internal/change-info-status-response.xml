@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<ChangeResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2010-10-01/">
+    <ChangeInfo>
+        <Id>/change/C34NBUXNVUM7LE</Id>
+        <Status>INSYNC</Status>
+        <SubmittedAt>2011-02-23T14:35:42.005Z</SubmittedAt>
+    </ChangeInfo>
+</ChangeResourceRecordSetsResponse>

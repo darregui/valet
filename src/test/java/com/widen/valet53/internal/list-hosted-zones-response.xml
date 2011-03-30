@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<ListHostedZonesResponse xmlns="https://route53.amazonaws.com/doc/2010-10-01/">
+    <HostedZones>
+        <HostedZone>
+            <Id>/hostedzone/Z18VDLRK3QY0Z4</Id>
+            <Name>uriahacarpenter.com.</Name>
+            <CallerReference>6a1dd118-8019-478b-9d06-6ae7158d82e1</CallerReference>
+            <Config>
+                <Comment>Create zone uriahacarpenter.com</Comment>
+            </Config>
+        </HostedZone>
+        <HostedZone>
+            <Id>/hostedzone/ZNI0MR764YEWF</Id>
+            <Name>uriahacarpenter.com.</Name>
+            <CallerReference>d09a3d58-4a6e-4ec4-a28f-3aaaf228676d</CallerReference>
+            <Config>
+                <Comment>Create zone uriahacarpenter.com</Comment>
+            </Config>
+        </HostedZone>
+    </HostedZones>
+    <IsTruncated>false</IsTruncated>
+    <MaxItems>100</MaxItems>
+</ListHostedZonesResponse>
+

@@ -1,0 +1,27 @@
+<CreateHostedZoneResponse xmlns="https://route53.amazonaws.com/doc/2010-10-01/">
+
+	<HostedZone>
+		<Id>/hostedzone/Z18VDLRK3QY0Z4</Id>
+		<Name>uriahacarpenter.com.</Name>
+		<CallerReference>6a1dd118-8019-478b-9d06-6ae7158d82e1</CallerReference>
+		<Config>
+			<Comment>Create zone uriahacarpenter.com</Comment>
+		</Config>
+	</HostedZone>
+
+	<ChangeInfo>
+		<Id>/change/CCDXB51U1QYWM</Id>
+		<Status>PENDING</Status>
+		<SubmittedAt>2011-02-19T07:21:32.655Z</SubmittedAt>
+	</ChangeInfo>
+
+	<DelegationSet>
+		<NameServers>
+			<NameServer>ns-1333.awsdns-38.org</NameServer>
+			<NameServer>ns-1940.awsdns-50.co.uk</NameServer>
+			<NameServer>ns-240.awsdns-30.com</NameServer>
+			<NameServer>ns-604.awsdns-11.net</NameServer>
+		</NameServers>
+	</DelegationSet>
+
+</CreateHostedZoneResponse>

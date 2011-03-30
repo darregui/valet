@@ -1,0 +1,164 @@
+package com.widen.valet53.internal;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.security.SignatureException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class Route53PilotImpl implements Route53Pilot
+{
+	private static final String ROUTE_53_ENDPOINT = "https://route53.amazonaws.com/2010-10-01/";
+
+	private static final String HOSTED_ZONE_ENDPOINT = ROUTE_53_ENDPOINT + "hostedzone";
+
+	private final String awsAccessKey;
+
+	private final String awsSecret;
+
+	public Route53PilotImpl(String awsAccessKey, String awsSecret)
+	{
+		Defense.notBlank(awsAccessKey, "awsAccessKey");
+		Defense.notBlank(awsSecret, "awsSecret");
+
+		this.awsAccessKey = awsAccessKey;
+		this.awsSecret = awsSecret;
+	}
+
+	public String executeHostedZoneGet()
+	{
+		return executeHostedZoneGet(null);
+	}
+
+
+	public String executeHostedZoneGet(String zone)
+	{
+		String uri = HOSTED_ZONE_ENDPOINT;
+
+		if (StringUtils.isNotBlank(zone))
+		{
+			uri = String.format("%s/%s", uri, zone);
+		}
+
+		HttpGet httpget = new HttpGet(uri);
+
+		return execute(httpget);
+	}
+
+	public String executeHostedZonePost(String payload)
+	{
+		HttpPost post = new HttpPost(HOSTED_ZONE_ENDPOINT);
+
+		try
+		{
+			post.setEntity(new StringEntity(payload));
+		}
+		catch (UnsupportedEncodingException e)
+		{
+			throw new RuntimeException(e);
+		}
+
+		return execute(post);
+	}
+
+	public String executeChangeInfoGet(String changeId)
+	{
+		HttpGet get = new HttpGet(ROUTE_53_ENDPOINT + "change/" + changeId);
+
+		return execute(get);
+	}
+
+	public String executeResourceRecordSetGet(String zone)
+	{
+		HttpGet get = new HttpGet(recordSetUri(zone));
+
+		return execute(get);
+	}
+
+	public String executeResourceRecordSetsPost(String zone, String payload)
+	{
+		HttpPost post = new HttpPost(recordSetUri(zone));
+
+		try
+		{
+			post.setEntity(new StringEntity(payload));
+		}
+		catch (UnsupportedEncodingException e)
+		{
+			throw new RuntimeException(e);
+		}
+
+		return execute(post);
+	}
+
+	private String recordSetUri(String zone)
+	{
+		return String.format("%s/%s/rrset", HOSTED_ZONE_ENDPOINT, zone);
+	}
+
+	private String execute(HttpRequestBase request)
+	{
+		String date = new SimpleDateFormat("EEEE, dd-MMM-yy HH:mm:ss zzz").format(new Date());
+
+		HttpClient httpclient = new DefaultHttpClient();
+
+		String signature = sign(date, awsSecret);
+
+		request.addHeader("Date", date);
+
+		request.addHeader("X-Amzn-Authorization", String.format("AWS3-HTTPS AWSAccessKeyId=%s,Algorithm=HmacSHA1,Signature=%s", awsAccessKey, signature));
+
+		request.addHeader("Content-Type", "text/plain");
+
+		String content = "<root><nonset/></root>";
+
+		try
+		{
+			HttpResponse response = httpclient.execute(request);
+
+			HttpEntity entity = response.getEntity();
+
+			if (entity != null)
+			{
+				content = EntityUtils.toString(entity);
+			}
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException(e);
+		}
+
+		return content;
+	}
+
+	/**
+		 * Computes RFC 2104-compliant HMAC signature.
+		 */
+		private static String sign(String data, String key)
+		{
+			try
+			{
+				Mac mac = Mac.getInstance("HmacSHA1");
+				mac.init(new SecretKeySpec(key.getBytes(), "HmacSHA1"));
+				return Base64.encodeBytes(mac.doFinal(data.getBytes("UTF-8")));
+			}
+			catch (Exception e)
+			{
+				throw new RuntimeException(new SignatureException("Failed to generate signature: " + e.getMessage(), e));
+			}
+		}
+
+}
