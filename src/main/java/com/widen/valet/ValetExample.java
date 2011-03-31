@@ -1,7 +1,7 @@
-package com.widen.valet53;
+package com.widen.valet;
 
-import com.widen.valet53.internal.Route53Pilot;
-import com.widen.valet53.internal.Route53PilotImpl;
+import com.widen.valet.internal.Route53Pilot;
+import com.widen.valet.internal.Route53PilotImpl;
 
 import java.util.List;
 

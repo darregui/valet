@@ -1,4 +1,4 @@
-package com.widen.valet53;
+package com.widen.valet;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 

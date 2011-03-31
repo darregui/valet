@@ -1,9 +1,9 @@
-package com.widen.valet53;
+package com.widen.valet;
 
 import com.mycila.xmltool.XMLDoc;
 import com.mycila.xmltool.XMLTag;
-import com.widen.valet53.internal.Defense;
-import com.widen.valet53.internal.Route53Pilot;
+import com.widen.valet.internal.Defense;
+import com.widen.valet.internal.Route53Pilot;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package com.widen.valet53;
+package com.widen.valet;
 
 public enum RecordType
 {

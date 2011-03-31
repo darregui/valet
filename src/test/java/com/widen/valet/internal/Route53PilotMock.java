@@ -1,4 +1,4 @@
-package com.widen.valet53.internal;
+package com.widen.valet.internal;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;

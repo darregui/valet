@@ -1,7 +1,7 @@
-package com.widen.valet53;
+package com.widen.valet;
 
-import com.widen.valet53.internal.Route53Pilot;
-import com.widen.valet53.internal.Route53PilotMock;
+import com.widen.valet.internal.Route53Pilot;
+import com.widen.valet.internal.Route53PilotMock;
 import org.junit.Test;
 
 public class ValetTest

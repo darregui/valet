@@ -1,4 +1,4 @@
-package com.widen.valet53.internal;
+package com.widen.valet.internal;
 
 /**
  * <p>Encodes and decodes to and from Base64 notation.</p>

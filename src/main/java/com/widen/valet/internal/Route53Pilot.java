@@ -1,4 +1,4 @@
-package com.widen.valet53.internal;
+package com.widen.valet.internal;
 
 public interface Route53Pilot
 {
