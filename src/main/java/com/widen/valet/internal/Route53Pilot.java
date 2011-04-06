@@ -3,7 +3,7 @@ package com.widen.valet.internal;
 public interface Route53Pilot
 {
 
-	String executeResourceRecordSetGet(String zone);
+	String executeResourceRecordSetGet(String zone, String query);
 
 	String executeResourceRecordSetsPost(String zone, String payload);
 

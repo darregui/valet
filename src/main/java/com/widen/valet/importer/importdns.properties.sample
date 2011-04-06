@@ -1,0 +1,19 @@
+#duplicate to 'importdns.properties'
+
+#'true' or 'false'
+widen.valet.dry-run=true
+
+widen.valet.aws-access-key=
+widen.valet.aws-private-key=
+
+#file should be in com.widen.valet.importer package
+widen.valet.import-file=
+
+#e.g. ZTXYZ123DEF45
+widen.valet.aws-route53-zone-id=
+
+#A name server assigned to the Route53 zone (e.g. ns-257.awsdns-32.com)
+#or set to 'route53rrs' to load records directly from Route53 API
+widen.valet.aws-name-server=
+
+widen.valet.default-ttl=600

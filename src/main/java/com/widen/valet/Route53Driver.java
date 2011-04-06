@@ -4,6 +4,7 @@ import com.mycila.xmltool.XMLDoc;
 import com.mycila.xmltool.XMLTag;
 import com.widen.valet.internal.Defense;
 import com.widen.valet.internal.Route53Pilot;
+import com.widen.valet.internal.Route53PilotImpl;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,11 @@ public class Route53Driver
 
 	private final Route53Pilot pilot;
 
+	public Route53Driver(String awsUserKey, String awsSecretKey)
+	{
+		this.pilot = new Route53PilotImpl(awsUserKey, awsSecretKey);
+	}
+
 	public Route53Driver(Route53Pilot pilot)
 	{
 		this.pilot = pilot;
@@ -34,6 +40,11 @@ public class Route53Driver
 
 	public ZoneChangeStatus updateZone(final Zone zone, final String comment, final List<ZoneUpdateAction> updateActions)
 	{
+		if (updateActions.isEmpty())
+		{
+			return new ZoneChangeStatus(zone.zoneId, "no-change-submitted", ZoneChangeStatus.Status.INSYNC, new Date());
+		}
+
 		String commentXml = StringUtils.defaultIfEmpty(comment, String.format("Modify %s records.", updateActions.size()));
 
 		XMLTag xml = XMLDoc.newDocument(false)
@@ -61,7 +72,14 @@ public class Route53Driver
 
 		log.debug("Update Zone Response:\n{}", result);
 
-		return parseChangeResourceRecordSetsResponse(zone.zoneId, result);
+		if (result.hasTag("Error"))
+		{
+			throw parseErrorResponse(result);
+		}
+		else
+		{
+			return parseChangeResourceRecordSetsResponse(zone.zoneId, result);
+		}
 	}
 
 	public ZoneChangeStatus queryChangeStatus(ZoneChangeStatus oldStatus)
@@ -97,19 +115,30 @@ public class Route53Driver
 		return new ZoneChangeStatus(zoneId, changeId, status, date);
 	}
 
+	private ValetException parseErrorResponse(XMLTag xml)
+	{
+		XMLTag error = xml.gotoChild("Error");
+
+		String type = error.getText("Type");
+		String code = error.getText("Code");
+		String message = error.getText("Message");
+
+		return new ValetException(String.format("%s: %s", code, message));
+	}
+
 	public void waitForSync(ZoneChangeStatus oldStatus)
 	{
-		boolean inSync = false;
+		boolean inSync = oldStatus.isInSync();
 
 		while (!inSync)
 		{
 			ZoneChangeStatus current = queryChangeStatus(oldStatus);
 
-			if (ZoneChangeStatus.Status.INSYNC.equals(current.status))
+			if (current.isInSync())
 			{
 				inSync = true;
 
-				log.debug("Zone {} in sync: {}", inSync);
+				log.debug("Zone ID {} is now INSYNC", current.zoneId);
 			}
 			else
 			{
@@ -127,29 +156,51 @@ public class Route53Driver
 
 	public List<ZoneResource> listZoneRecords(final Zone zone)
 	{
-		String result = pilot.executeResourceRecordSetGet(zone.zoneId);
+		Set<ZoneResource> zoneResources = new HashSet<ZoneResource>();
 
-		XMLTag xml = XMLDoc.from(result, true);
+		boolean readMore = true;
 
-		List<ZoneResource> zoneResources = new ArrayList<ZoneResource>();
+		String query = "";
 
-		for (XMLTag record : xml.getChilds("//ResourceRecordSet"))
+		while (readMore)
 		{
-			String name = record.getText("Name");
-			String type = record.getText("Type");
-			String ttl = record.getText("TTL");
+			String result = pilot.executeResourceRecordSetGet(zone.zoneId, query);
 
-			List<String> values = new ArrayList<String>();
+			XMLTag xml = XMLDoc.from(result, true);
 
-			for (XMLTag resource : record.getChilds("ResourceRecords/ResourceRecord"))
+			if (xml.getText("//IsTruncated").equals("false"))
 			{
-				values.add(resource.getText("Value"));
+				readMore = false;
 			}
 
-			zoneResources.add(new ZoneResource(name, RecordType.valueOf(type), Integer.parseInt(ttl), values));
+			String lastName = "";
+
+			for (XMLTag record : xml.getChilds("//ResourceRecordSet"))
+			{
+				String name = record.getText("Name");
+				String type = record.getText("Type");
+				String ttl = record.getText("TTL");
+
+				List<String> values = new ArrayList<String>();
+
+				for (XMLTag resource : record.getChilds("ResourceRecords/ResourceRecord"))
+				{
+					values.add(resource.getText("Value"));
+				}
+
+				zoneResources.add(new ZoneResource(name, RecordType.valueOf(type), Integer.parseInt(ttl), values));
+
+				lastName = name;
+			}
+
+			query = String.format("name=%s", lastName);
 		}
 
-		return zoneResources;
+		List<ZoneResource> list = new ArrayList<ZoneResource>();
+
+		list.addAll(zoneResources);
+
+		return list;
 	}
 
 	public List<Zone> listZones()

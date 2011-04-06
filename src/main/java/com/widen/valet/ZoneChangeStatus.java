@@ -28,6 +28,16 @@ public class ZoneChangeStatus
 		this.submitDate = submitDate;
 	}
 
+	public boolean isPending()
+	{
+		return Status.PENDING.equals(status);
+	}
+
+	public boolean isInSync()
+	{
+		return Status.INSYNC.equals(status);
+	}
+
 	@Override
 	public String toString()
 	{

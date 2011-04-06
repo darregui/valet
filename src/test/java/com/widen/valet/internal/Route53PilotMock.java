@@ -34,7 +34,7 @@ public class Route53PilotMock implements Route53Pilot
 		}
 	}
 
-	public String executeResourceRecordSetGet(String zone)
+	public String executeResourceRecordSetGet(String zone, String query)
 	{
 		try
 		{

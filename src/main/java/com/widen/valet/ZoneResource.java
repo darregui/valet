@@ -1,5 +1,7 @@
 package com.widen.valet;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 
 import java.util.Collections;
@@ -23,6 +25,11 @@ public class ZoneResource
 		this.resourceRecords = Collections.unmodifiableList(resourceRecords);
 	}
 
+	public String getFirstResource()
+	{
+		return resourceRecords.iterator().next();
+	}
+
 	public final ZoneUpdateAction createAction()
 	{
 		return ZoneUpdateAction.createAction(name, recordType, ttl, resourceRecords.toArray(new String[0]));
@@ -37,5 +44,18 @@ public class ZoneResource
 	public String toString()
 	{
 		return ToStringBuilder.reflectionToString(this);
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		ZoneResource rhs = (ZoneResource) obj;
+		return new EqualsBuilder().append(name, rhs.name).append(recordType, rhs.recordType).append(ttl, rhs.ttl).append(resourceRecords, rhs.resourceRecords).isEquals();
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return new HashCodeBuilder().append(name).append(recordType).append(ttl).append(resourceRecords).toHashCode();
 	}
 }

@@ -81,16 +81,16 @@ public class Route53PilotImpl implements Route53Pilot
 		return execute(get);
 	}
 
-	public String executeResourceRecordSetGet(String zone)
+	public String executeResourceRecordSetGet(String zone, String query)
 	{
-		HttpGet get = new HttpGet(recordSetUri(zone));
+		HttpGet get = new HttpGet(recordSetUri(zone, query));
 
 		return execute(get);
 	}
 
 	public String executeResourceRecordSetsPost(String zone, String payload)
 	{
-		HttpPost post = new HttpPost(recordSetUri(zone));
+		HttpPost post = new HttpPost(recordSetUri(zone, ""));
 
 		try
 		{
@@ -104,9 +104,16 @@ public class Route53PilotImpl implements Route53Pilot
 		return execute(post);
 	}
 
-	private String recordSetUri(String zone)
+	private String recordSetUri(String zone, String query)
 	{
-		return String.format("%s/%s/rrset", HOSTED_ZONE_ENDPOINT, zone);
+		String q = "";
+
+		if (StringUtils.isNotBlank(query))
+		{
+			q = "?" + query;
+		}
+
+		return String.format("%s/%s/rrset%s", HOSTED_ZONE_ENDPOINT, zone, q);
 	}
 
 	private String execute(HttpRequestBase request)
