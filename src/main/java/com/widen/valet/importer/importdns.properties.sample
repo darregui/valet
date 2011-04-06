@@ -6,8 +6,8 @@ widen.valet.dry-run=true
 widen.valet.aws-access-key=
 widen.valet.aws-private-key=
 
-#file should be in com.widen.valet.importer package
-widen.valet.import-file=
+#file should be in com.widen.valet.importer.zones package
+widen.valet.import-file=zone-sample.txt
 
 #e.g. ZTXYZ123DEF45
 widen.valet.aws-route53-zone-id=

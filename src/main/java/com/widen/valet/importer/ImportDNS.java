@@ -54,7 +54,7 @@ public class ImportDNS
 	{
 		awsAccessKey = getAndVerifyProperty("widen.valet.aws-access-key", properties);
 		awsPrivateKey = getAndVerifyProperty("widen.valet.aws-private-key", properties);
-		importFile = getAndVerifyProperty("widen.valet.import-file", properties);
+		importFile = "zones/" + getAndVerifyProperty("widen.valet.import-file", properties);
 		route53ZoneId = getAndVerifyProperty("widen.valet.aws-route53-zone-id", properties);
 		defaultTTL = Integer.parseInt(getAndVerifyProperty("widen.valet.default-ttl", properties));
 		dryRun = Boolean.parseBoolean(getAndVerifyProperty("widen.valet.dry-run", properties));
