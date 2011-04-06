@@ -3,4 +3,5 @@
 .idea/workspace.xml
 build/
 src/main/java/com/widen/valet/importer/importdns.properties
+src/main/java/com/widen/valet/importer/*
 valet.iml
