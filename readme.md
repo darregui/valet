@@ -9,3 +9,9 @@ Includes [automation classes](https://github.com/Widen/valet/blob/master/src/mai
 Eclipse users use `gradle eclipse` to build `.classpath`.
 
 IntelliJ users use `gradle idea` to build `.iml` file.
+
+Use `gradle jar` to build a Jar with sources included.
+
+Contact Uriah Carpenter (uriah at widen.com) with questions.
+
+Licensed under Apache, Version 2.0.
