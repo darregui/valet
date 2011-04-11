@@ -4,6 +4,8 @@ import com.widen.valet.RecordType;
 import org.xbill.DNS.*;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class NameQueryServiceImpl implements NameQueryService
 {
@@ -41,18 +43,22 @@ public class NameQueryServiceImpl implements NameQueryService
 
 		Record[] records = lookup.run();
 
-		if (records == null)
+		if (records == null || !(records.length > 0))
 		{
-			return LookupRecord.DOES_NOT_EXIST();
+			return LookupRecord.NON_EXISTENT_RECORD;
 		}
 
-		if (records.length > 0)
-		{
-			Record record = records[0];
+		int ttl = 0;
 
-			return new LookupRecord(record.rdataToString(), (int) record.getTTL(), true);
+		List<String> values = new ArrayList<String>();
+
+		for (Record r : records)
+		{
+			values.add(r.rdataToString());
+
+			ttl = (int) r.getTTL();
 		}
 
-		return LookupRecord.DOES_NOT_EXIST();
+		return new LookupRecord(name, values, ttl, true);
 	}
 }

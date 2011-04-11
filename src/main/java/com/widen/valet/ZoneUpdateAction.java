@@ -1,23 +1,27 @@
 package com.widen.valet;
 
 import com.mycila.xmltool.XMLTag;
+import org.apache.commons.lang.builder.CompareToBuilder;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class ZoneUpdateAction
+public class ZoneUpdateAction implements Comparable<ZoneUpdateAction>
 {
-	private final String action;
+	public final String action;
 
-	private final String name;
+	public final String name;
 
-	private final RecordType type;
+	public final RecordType type;
 
-	private final int ttl;
+	public final int ttl;
 
-	private final List<String> resourceRecord;
+	public final List<String> resourceRecord;
 
 	private ZoneUpdateAction(String action, String name, RecordType type, int ttl, List<String> resourceRecords)
 	{
@@ -25,12 +29,23 @@ public class ZoneUpdateAction
 		this.name = name;
 		this.type = type;
 		this.ttl = ttl;
+
+		Collections.sort(resourceRecords);
 		this.resourceRecord = Collections.unmodifiableList(resourceRecords);
+	}
+
+	public static ZoneUpdateAction mergeResources(ZoneUpdateAction action, List<String> resources)
+	{
+		List<String> mergedResources = new ArrayList<String>();
+		mergedResources.addAll(action.resourceRecord);
+		mergedResources.addAll(resources);
+
+		return new ZoneUpdateAction(action.action, action.name, action.type, action.ttl, mergedResources);
 	}
 
 	public static ZoneUpdateAction createAction(String name, RecordType type, int ttl, String... resource)
 	{
-		return new ZoneUpdateAction("CREATE", name, type,ttl, Arrays.asList(resource));
+		return new ZoneUpdateAction("CREATE", name, type, ttl, Arrays.asList(resource));
 	}
 
 	public static ZoneUpdateAction deleteAction(String name, RecordType type, int ttl, String... resource)
@@ -50,7 +65,11 @@ public class ZoneUpdateAction
 
 		for (String resource : resourceRecord)
 		{
-			xml.addTag("ResourceRecord").addTag("Value").addText(resource);
+			String value = resource;
+
+			xml.addTag("ResourceRecord").addTag("Value").addText(value);
+
+			xml.gotoParent();
 		}
 	}
 
@@ -58,5 +77,30 @@ public class ZoneUpdateAction
 	public String toString()
 	{
 		return ToStringBuilder.reflectionToString(this);
+	}
+
+	/**
+	 * Actions are equal if action, name, and type are the same.
+	 *
+	 * @param obj
+	 * @return
+	 */
+	@Override
+	public boolean equals(Object obj)
+	{
+		ZoneUpdateAction rhs = (ZoneUpdateAction) obj;
+		return new EqualsBuilder().append(action, rhs.action).append(name, rhs.name).append(type, rhs.type).isEquals();
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return new HashCodeBuilder().append(action).append(name).append(type).toHashCode();
+	}
+
+	@Override
+	public int compareTo(ZoneUpdateAction rhs)
+	{
+		return new CompareToBuilder().append(action, rhs.action).append(name, rhs.name).append(type, rhs.type).toComparison();
 	}
 }

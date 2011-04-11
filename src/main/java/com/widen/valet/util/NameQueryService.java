@@ -1,6 +1,11 @@
 package com.widen.valet.util;
 
 import com.widen.valet.RecordType;
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public interface NameQueryService
 {
@@ -16,22 +21,48 @@ public interface NameQueryService
 
 	public class LookupRecord
 	{
-		public final String value;
+		public static final LookupRecord NON_EXISTENT_RECORD = new LookupRecord("", Collections.<String>emptyList(), 0, false);
+
+		public final String name;
+
+		public final List<String> values;
 
 		public final int ttl;
 
 		public final boolean exists;
 
-		public LookupRecord(String value, int ttl, boolean exists)
+		public LookupRecord(String name, List<String> values, int ttl, boolean exists)
 		{
-			this.value = value;
+			this.name = name;
+			this.values = values;
 			this.ttl = ttl;
 			this.exists = exists;
 		}
 
-		public static final LookupRecord DOES_NOT_EXIST()
+		public String getFirstValue()
 		{
-			return new LookupRecord("", 0, false);
+			if (values.isEmpty())
+			{
+				return "";
+			}
+
+			return values.iterator().next();
+		}
+
+		public boolean valueEqual(String value)
+		{
+			return valuesEqual(Arrays.asList(value));
+		}
+
+		public boolean valuesEqual(List<String> values)
+		{
+			return values.equals(values);
+		}
+
+		@Override
+		public String toString()
+		{
+			return new ToStringBuilder(this).append("name", name).append("exists", exists).append("value", values).toString();
 		}
 	}
 

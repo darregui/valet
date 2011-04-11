@@ -23,26 +23,53 @@ public class Route53Driver
 
 	private final Route53Pilot pilot;
 
+	/**
+	 * Construct driver using AWS user/secret keys.
+	 * @param awsUserKey
+	 * @param awsSecretKey
+	 */
 	public Route53Driver(String awsUserKey, String awsSecretKey)
 	{
 		this.pilot = new Route53PilotImpl(awsUserKey, awsSecretKey);
 	}
 
+	/**
+	 * Use specific pilot for driver.
+	 *
+	 * @param pilot
+	 */
 	public Route53Driver(Route53Pilot pilot)
 	{
 		this.pilot = pilot;
 	}
 
+	/**
+	 * Submit ordered list of commands to Route53.
+	 * @param zone
+	 * @param comment
+	 * @param actions
+	 * @return
+	 */
 	public ZoneChangeStatus updateZone(final Zone zone, final String comment, ZoneUpdateAction... actions)
 	{
 		return updateZone(zone, comment, Arrays.asList(actions));
 	}
 
+	/**
+	 * Submit ordered list of commands to Route53.
+	 *
+	 * @param zone
+	 * @param comment
+	 * @param updateActions
+	 * @return
+	 * @thorws
+	 *      ValetException if Route53 rejects the transaction block
+	 */
 	public ZoneChangeStatus updateZone(final Zone zone, final String comment, final List<ZoneUpdateAction> updateActions)
 	{
 		if (updateActions.isEmpty())
 		{
-			return new ZoneChangeStatus(zone.zoneId, "no-change-submitted", ZoneChangeStatus.Status.INSYNC, new Date());
+			return new ZoneChangeStatus(zone.getExistentZoneId(), "no-change-submitted", ZoneChangeStatus.Status.INSYNC, new Date());
 		}
 
 		String commentXml = StringUtils.defaultIfEmpty(comment, String.format("Modify %s records.", updateActions.size()));
@@ -66,7 +93,7 @@ public class Route53Driver
 
 		log.debug("Update Zone Post Payload:\n{}", payload);
 
-		String responseText = pilot.executeResourceRecordSetsPost(zone.zoneId, payload);
+		String responseText = pilot.executeResourceRecordSetsPost(zone.getExistentZoneId(), payload);
 
 		XMLTag result = XMLDoc.from(responseText, true);
 
@@ -76,12 +103,15 @@ public class Route53Driver
 		{
 			throw parseErrorResponse(result);
 		}
-		else
-		{
-			return parseChangeResourceRecordSetsResponse(zone.zoneId, result);
-		}
+
+		return parseChangeResourceRecordSetsResponse(zone.getExistentZoneId(), result);
 	}
 
+	/**
+	 * Use old ZoneChangeStatus to query for current status of a ZoneChange
+	 * @param oldStatus
+	 * @return
+	 */
 	public ZoneChangeStatus queryChangeStatus(ZoneChangeStatus oldStatus)
 	{
 		String response = pilot.executeChangeInfoGet(oldStatus.changeId);
@@ -126,6 +156,10 @@ public class Route53Driver
 		return new ValetException(String.format("%s: %s", code, message));
 	}
 
+	/**
+	 * Block until ZoneChangeStatus return INSYNC from Route53
+	 * @param oldStatus
+	 */
 	public void waitForSync(ZoneChangeStatus oldStatus)
 	{
 		boolean inSync = oldStatus.isInSync();
@@ -144,7 +178,7 @@ public class Route53Driver
 			{
 				try
 				{
-					log.debug("Sleeping while waiting for INSYNC.");
+					log.debug("Waiting for INSYNC...");
 					Thread.sleep(2000);
 				}
 				catch (InterruptedException e)
@@ -154,6 +188,13 @@ public class Route53Driver
 		}
 	}
 
+	/**
+	 * Query for all Resources in Zone.
+	 * May make multiple Route53 calls to retrieve all the resources.
+	 * @param zone
+	 * @return
+	 *      List of Zone Resources
+	 */
 	public List<ZoneResource> listZoneRecords(final Zone zone)
 	{
 		Set<ZoneResource> zoneResources = new HashSet<ZoneResource>();
@@ -164,7 +205,7 @@ public class Route53Driver
 
 		while (readMore)
 		{
-			String result = pilot.executeResourceRecordSetGet(zone.zoneId, query);
+			String result = pilot.executeResourceRecordSetGet(zone.getExistentZoneId(), query);
 
 			XMLTag xml = XMLDoc.from(result, true);
 
@@ -188,6 +229,8 @@ public class Route53Driver
 					values.add(resource.getText("Value"));
 				}
 
+				Collections.sort(values);
+
 				zoneResources.add(new ZoneResource(name, RecordType.valueOf(type), Integer.parseInt(ttl), values));
 
 				lastName = name;
@@ -203,11 +246,24 @@ public class Route53Driver
 		return list;
 	}
 
+	/**
+	 * Query for all Zones assigned to AWS Access Key.
+	 *
+	 * <p>Zones returned from this method do <b>NOT</b> include name servers.
+	 * Reload zone using zoneDetail(Zone z) if name server addresses are needed.
+	 *
+	 * @return
+	 */
 	public List<Zone> listZones()
 	{
 		String result = pilot.executeHostedZoneGet("");
 
 		XMLTag xml = XMLDoc.from(result, true);
+
+		if (xml.hasTag("Error"))
+		{
+			throw parseErrorResponse(xml);
+		}
 
 		ArrayList<Zone> zones = new ArrayList<Zone>();
 
@@ -219,6 +275,12 @@ public class Route53Driver
 		return zones;
 	}
 
+	/**
+	 * Query for named Route53 zone ID (e.g. Z123ABC456DEF)
+	 *
+	 * @param zoneId
+	 * @return
+	 */
 	public Zone zoneDetails(final String zoneId)
 	{
 		Zone zone = new Zone(zoneId, "", "", "", Collections.<String>emptyList());
@@ -226,11 +288,42 @@ public class Route53Driver
 		return zoneDetails(zone);
 	}
 
+	/**
+	 * Query for named domain in Route53 (e.g. "foodomain.com.")
+	 * @param domain
+	 * @return
+	 */
+	public Zone zoneDetailsForDomain(final String domain)
+	{
+		List<Zone> zones = listZones();
+
+		for (Zone zone : zones)
+		{
+			if (StringUtils.equalsIgnoreCase(zone.name, domain))
+			{
+				return zone;
+			}
+		}
+
+		return Zone.NON_EXISTENT_ZONE;
+	}
+
+	/**
+	 * Load detailed information for named Zone.
+	 *
+	 * @param zone
+	 * @return
+	 */
 	public Zone zoneDetails(final Zone zone)
 	{
-		String result = pilot.executeHostedZoneGet(zone.zoneId);
+		String result = pilot.executeHostedZoneGet(zone.getExistentZoneId());
 
 		XMLTag xml = XMLDoc.from(result, true);
+
+		if (xml.hasTag("Error"))
+		{
+			throw parseErrorResponse(xml);
+		}
 
 		return buildZone(xml.gotoChild("HostedZone"));
 	}
@@ -256,13 +349,12 @@ public class Route53Driver
 	}
 
 	/**
-	 * Zone to create.
-	 *
-	 * Use zoneDetails() to get
+	 * Create a Zone in Route53
 	 *
 	 * @param domainName
 	 * @return
-	 * @throws IllegalArgumentException if domainName is null, blank, starts/ends with period.
+	 * @throws IllegalArgumentException
+	 *      if domainName is null, blank, starts/ends with period.
 	 */
 	public ZoneChangeStatus createZone(final String domainName, final String comment)
 	{
@@ -274,7 +366,7 @@ public class Route53Driver
 				.addDefaultNamespace(ROUTE53_XML_NAMESPACE)
 				.addRoot("CreateHostedZoneRequest")
 				.addTag("Name").addText(domainName)
-				.addTag("CallerReference").addText("Created by Valet53 (" + UUID.randomUUID().toString() + ")")
+				.addTag("CallerReference").addText(UUID.randomUUID().toString())
 				.addTag("HostedZoneConfig")
 				.addTag("Comment").addText(comment)
 				.toString();
@@ -283,15 +375,22 @@ public class Route53Driver
 
 		String result = pilot.executeHostedZonePost(payload);
 
-		XMLTag resultXml = XMLDoc.from(result, true);
+		XMLTag xml = XMLDoc.from(result, true);
 
-		log.debug("Create Zone Response:\n{}", resultXml);
+		log.debug("Create Zone Response:\n{}", xml);
 
-		Zone zone = buildZone(resultXml);
+		if (xml.hasTag("Error"))
+		{
+			throw parseErrorResponse(xml);
+		}
 
-		resultXml.gotoRoot();
+		xml.gotoChild("HostedZone");
 
-		return parseChangeResourceRecordSetsResponse(zone.zoneId, resultXml);
+		Zone zone = buildZone(xml);
+
+		xml.gotoRoot();
+
+		return parseChangeResourceRecordSetsResponse(zone.getExistentZoneId(), xml);
 	}
 
 	private void ensureDomainNameNotAlreadyCreated(String domainName)
@@ -307,7 +406,13 @@ public class Route53Driver
 		}
 	}
 
-	public boolean zoneExists(final String domainName)
+	/**
+	 * Query for existence of named domain in Zones available to AWS Access Key
+	 *
+	 * @param domainName
+	 * @return
+	 */
+	public boolean zoneDomainExists(final String domainName)
 	{
 		checkDomainName(domainName);
 
@@ -330,7 +435,7 @@ public class Route53Driver
 
 		if (StringUtils.startsWith(name, ".") || !StringUtils.endsWith(name, "."))
 		{
-			throw new IllegalArgumentException("Domain name '" + name + "' is invalid to create. Name can not start with a period and must end with a period.");
+			throw new IllegalArgumentException("Domain name '" + name + "' is invalid. Name can not start with a period and must end with a period.");
 		}
 	}
 

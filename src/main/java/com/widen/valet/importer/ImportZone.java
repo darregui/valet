@@ -10,13 +10,26 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-public class ImportDNS
+/**
+ * Smart sync zone from file.
+ *
+ * <p><b>Only tested using Windows 2003 DNS server files!</b>
+ *
+ * <p>Resources will be one-way synced with file. Route53 entries will be created or modified to match
+ * zone file. Additional records present in Route53 will not be deleted.
+ *
+ * <p>Zones are <b>not</b> auto-created. Use ImportBulkZones to auto-create Route53 hosted zones.
+ *
+ * <p>Uses <b>importdns.properties</b>; see importdns.properties.sample for details.
+ */
+public class ImportZone
 {
-	private final Logger log = LoggerFactory.getLogger(ImportDNS.class);
+	private final Logger log = LoggerFactory.getLogger(ImportZone.class);
 
 	private final String awsAccessKey;
 
@@ -38,7 +51,7 @@ public class ImportDNS
 	{
 		Properties properties = new Properties();
 
-		InputStream stream = ImportDNS.class.getResourceAsStream("importdns.properties");
+		InputStream stream = ImportZone.class.getResourceAsStream("importdns.properties");
 
 		if (stream == null)
 		{
@@ -47,14 +60,14 @@ public class ImportDNS
 
 		properties.load(stream);
 
-		new ImportDNS(properties).run();
+		new ImportZone(properties).run();
 	}
 
-	public ImportDNS(Properties properties)
+	public ImportZone(Properties properties)
 	{
 		awsAccessKey = getAndVerifyProperty("widen.valet.aws-access-key", properties);
 		awsPrivateKey = getAndVerifyProperty("widen.valet.aws-private-key", properties);
-		importFile = "zones/" + getAndVerifyProperty("widen.valet.import-file", properties);
+		importFile = getAndVerifyProperty("widen.valet.import-file", properties);
 		route53ZoneId = getAndVerifyProperty("widen.valet.aws-route53-zone-id", properties);
 		defaultTTL = Integer.parseInt(getAndVerifyProperty("widen.valet.default-ttl", properties));
 		dryRun = Boolean.parseBoolean(getAndVerifyProperty("widen.valet.dry-run", properties));
@@ -73,7 +86,7 @@ public class ImportDNS
 		return prop;
 	}
 
-	private void run() throws IOException
+	public void run() throws IOException
 	{
 		Route53Driver driver = new Route53Driver(awsAccessKey, awsPrivateKey);
 
@@ -88,7 +101,9 @@ public class ImportDNS
 			queryService = new NameQueryServiceImpl(nameServer);
 		}
 
-		List<ZoneUpdateAction> actions = createZoneUpdateActions(zone);
+		final List<ZoneUpdateAction> actions = createZoneUpdateActions(zone);
+
+		log.info("Zone Update Actions Created:\n{}", StringUtils.join(actions, "\n"));
 
 		if (dryRun)
 		{
@@ -114,7 +129,7 @@ public class ImportDNS
 
 	private List<ZoneUpdateAction> createZoneUpdateActions(Zone zone) throws IOException
 	{
-		List<String> lines = IOUtils.readLines(getClass().getResourceAsStream(importFile));
+		List<String> lines = IOUtils.readLines(new FileInputStream(importFile));
 
 		boolean foundZoneRecords = false;
 
@@ -136,50 +151,76 @@ public class ImportDNS
 			{
 				log.debug("processing line: {}", l);
 
-				actions.addAll(parseRecord(l, zone.name));
+				List<ZoneUpdateAction> actionForRecord = parseRecord(l, zone.name, actions);
+
+				actions.addAll(actionForRecord);
 			}
 		}
-
-		log.info("Zone Update Actions Created:\n{}", StringUtils.join(actions, "\n"));
 
 		return actions;
 	}
 
-	private List<ZoneUpdateAction> parseRecord(String record, String zone)
+	private List<ZoneUpdateAction> parseRecord(String record, String zone, List<ZoneUpdateAction> existing)
 	{
-		String[] split = StringUtils.split(record);
+		final List<String> split = ZoneFileLineSplitter.splitLine(record);
 
-		if (split.length != 3)
+		final String rawName = split.get(0);
+
+		final String name;
+
+		if ("@".equals(rawName))
 		{
-			log.warn("Ignoring the record '{}' because it is not 3 tokens.", record);
-			return Collections.emptyList();
+			name = zone.toLowerCase();
+		}
+		else
+		{
+			name = String.format("%s.%s", rawName, zone).toLowerCase();
 		}
 
-		final String name = String.format("%s.%s", split[0], zone).toLowerCase();
-		final RecordType type = RecordType.valueOf(split[1]);
-		final String value = split[2].toLowerCase();
+		final RecordType type = RecordType.valueOf(split.get(1));
+
+		final String value = split.get(2).toLowerCase();
 
 		NameQueryService.LookupRecord lookupRecord = queryService.lookup(name, type);
 
 		if (!lookupRecord.exists)
 		{
-			return Arrays.asList(ZoneUpdateAction.createAction(name, type, defaultTTL, value));
+			ZoneUpdateAction action = ZoneUpdateAction.createAction(name, type, defaultTTL, value);
+
+			return Arrays.asList(mergeAction(action, existing));
 		}
-		else if (StringUtils.equals(lookupRecord.value, value))
+		else if (lookupRecord.valueEqual(value))
 		{
-			log.debug("{} {} {} is current", new Object[] { name, type, lookupRecord.value });
+			log.debug("{} {} {} is current", new Object[]{name, type, lookupRecord.values});
 
 			return Collections.emptyList();
 		}
 		else
 		{
-			ZoneUpdateAction delete = ZoneUpdateAction.deleteAction(name, type, lookupRecord.ttl, lookupRecord.value);
+			ZoneUpdateAction delete = ZoneUpdateAction.deleteAction(name, type, lookupRecord.ttl, lookupRecord.values.toArray(new String[] {}));
 
 			ZoneUpdateAction create = ZoneUpdateAction.createAction(name, type, defaultTTL, value);
 
-			return Arrays.asList(delete, create);
+			return Arrays.asList(mergeAction(delete, existing), mergeAction(create, existing));
 		}
+	}
 
+	ZoneUpdateAction mergeAction(ZoneUpdateAction action, List<ZoneUpdateAction> existing)
+	{
+		int itemToMerge = Collections.binarySearch(existing, action);
+
+		if (itemToMerge >= 0)
+		{
+			List<String> resources = existing.get(itemToMerge).resourceRecord;
+
+			existing.remove(itemToMerge);
+
+			return ZoneUpdateAction.mergeResources(action, resources);
+		}
+		else
+		{
+			return action;
+		}
 	}
 
 }

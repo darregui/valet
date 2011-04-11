@@ -41,10 +41,10 @@ public class NameQueryByRoute53APIService implements NameQueryService
 
 		if (resource == null)
 		{
-			return LookupRecord.DOES_NOT_EXIST();
+			return LookupRecord.NON_EXISTENT_RECORD;
 		}
 
-		return new LookupRecord(resource.getFirstResource(), resource.ttl, true);
+		return new LookupRecord(name, resource.resourceRecords, resource.ttl, true);
 	}
 
 	private final class RecordKey

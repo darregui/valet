@@ -1,12 +1,15 @@
 package com.widen.valet;
 
+import org.apache.commons.lang.builder.CompareToBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 
 import java.util.Collections;
 import java.util.List;
 
-public class Zone
+public class Zone implements Comparable<Zone>
 {
+	public static final Zone NON_EXISTENT_ZONE = new Zone("Z_NON_EXISTENT", "non-existent-zone.com.", "", "", Collections.<String>emptyList());
+
 	public final String zoneId;
 
 	public final String name;
@@ -30,5 +33,21 @@ public class Zone
 	public String toString()
 	{
 		return ToStringBuilder.reflectionToString(this);
+	}
+
+	public String getExistentZoneId()
+	{
+		if (this == NON_EXISTENT_ZONE)
+		{
+			throw new UnsupportedOperationException("Cannot perform action on non-existent zone.");
+		}
+
+		return zoneId;
+	}
+
+	@Override
+	public int compareTo(Zone rhs)
+	{
+		return new CompareToBuilder().append(name, rhs.name).append(zoneId, rhs.zoneId).toComparison();
 	}
 }

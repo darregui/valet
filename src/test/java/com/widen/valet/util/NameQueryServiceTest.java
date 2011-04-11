@@ -15,7 +15,7 @@ public class NameQueryServiceTest
 
 		if (record.exists)
 		{
-			System.out.println(String.format("%s = %s, ttl = %s", name, record.value, record.ttl));
+			System.out.println(String.format("%s = %s, ttl = %s", name, record.values, record.ttl));
 		}
 		else
 		{
