@@ -1,0 +1,30 @@
+;
+;  Database file for uriahfootest.com zone.
+;      Zone version:  634
+;
+
+@                       IN  SOA hostmaster.uriahfootest.com. (
+                        	634          ; serial number
+                        	300          ; refresh
+                        	60           ; retry
+                        	43200        ; expire
+                        	3600       ) ; default TTL
+
+;
+;  Zone NS records
+;
+
+dc1.uriahfootest.com.     A	10.0.0.1
+dc2.uriahfootest.com.     A	10.0.0.2
+@                       NS	dc1.uriahfootest.com.
+@                       NS	dc2.uriahfootest.com.
+
+;
+;  Zone records
+;
+
+test1                 A	172.17.0.1
+test2                 A	172.17.0.2
+test3                A	172.17.0.3
+test4        A	    172.17.0.4
+test5                  CNAME	test2.uriahfootest.com.
