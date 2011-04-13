@@ -351,12 +351,15 @@ public class Route53Driver
 
 		String callerReference = xml.getText("CallerReference");
 
-        String comment = "";
-        try {
-            comment = xml.getText("Config/Comment");
-        }
-        catch (XMLDocumentException e) {}
+		String comment = "";
 
+		try
+		{
+			comment = xml.getText("Config/Comment");
+		}
+		catch (XMLDocumentException e)
+		{
+		}
 
 		List<String> nameServers = new ArrayList<String>();
 
