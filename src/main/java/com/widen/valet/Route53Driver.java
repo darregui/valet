@@ -15,6 +15,7 @@
 package com.widen.valet;
 
 import com.mycila.xmltool.XMLDoc;
+import com.mycila.xmltool.XMLDocumentException;
 import com.mycila.xmltool.XMLTag;
 import com.widen.valet.internal.Defense;
 import com.widen.valet.internal.Route53Pilot;
@@ -350,7 +351,12 @@ public class Route53Driver
 
 		String callerReference = xml.getText("CallerReference");
 
-		String comment = xml.getText("Config/Comment");
+        String comment = "";
+        try {
+            comment = xml.getText("Config/Comment");
+        }
+        catch (XMLDocumentException e) {}
+
 
 		List<String> nameServers = new ArrayList<String>();
 
