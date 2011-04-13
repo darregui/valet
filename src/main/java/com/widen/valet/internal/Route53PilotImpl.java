@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.SignatureException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.TimeZone;
 
 public class Route53PilotImpl implements Route53Pilot
 {
@@ -118,7 +120,7 @@ public class Route53PilotImpl implements Route53Pilot
 
 	private String execute(HttpRequestBase request)
 	{
-		String date = new SimpleDateFormat("EEEE, dd-MMM-yy HH:mm:ss zzz").format(new Date());
+		String date = new SimpleDateFormat("EEEE, dd-MMM-yy HH:mm:ss zzz", java.util.Locale.US).format(new Date());
 
 		HttpClient httpclient = new DefaultHttpClient();
 
