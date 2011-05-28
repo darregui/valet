@@ -8,7 +8,7 @@ Includes [automation classes](https://github.com/Widen/valet/blob/master/src/mai
 
 Available via Maven:
 
-      server: http://widen.artifactoryonline.com/
+      server: http://widen.artifactoryonline.com/widen/libs-widen-public
        group: widen
     artifact: valet
      version: 0.1
