@@ -13,6 +13,8 @@ Available via Maven:
     artifact: valet
      version: 0.1
 
+Or browse the repo directly at [https://widen.artifactoryonline.com/widen/libs-widen-public](https://widen.artifactoryonline.com/widen/libs-widen-public/widen/valet/)
+
 Contact Uriah Carpenter (uriah at widen.com) with questions.
 
 Licensed under Apache, Version 2.0.

@@ -4,6 +4,7 @@
 .idea/workspace.xml
 build/
 gradle.properties
+out/
 src/main/java/com/widen/valet/importer/importdns.properties
 src/main/java/com/widen/valet/importer/zones/*
 valet.iml
