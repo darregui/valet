@@ -10,7 +10,15 @@ sourceCompatibility = 1.5
 targetCompatibility = 1.5
 
 repositories {
-    mavenCentral()
+	mavenCentral()
+}
+
+uploadArchives {
+	repositories.mavenDeployer {
+		repository(url: 'https://widen.artifactoryonline.com/widen/libs-widen-public') {
+			authentication(userName: USER, password: PASSWORD)
+		}
+	}
 }
 
 dependencies {
@@ -39,8 +47,13 @@ dependencies {
 	compile group: 'ch.qos.logback', name: 'logback-classic', version: '0.9.27'
 }
 
-jar {
-	from sourceSets.main.allJava
+task sourcesJar(type: Jar) {
+	from sourceSets.main.allSource
+	classifier = 'sources'
+}
+
+artifacts {
+	archives sourcesJar
 }
 
 eclipseClasspath {
