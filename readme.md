@@ -6,11 +6,12 @@ View [ValetExample](https://github.com/Widen/valet/blob/master/src/main/java/com
 
 Includes [automation classes](https://github.com/Widen/valet/blob/master/src/main/java/com/widen/valet/importer) to import/one-way-sync existing Windows DNS server files.
 
-Eclipse users use `gradle eclipse` to build `.classpath`.
+Available via Maven:
 
-IntelliJ users use `gradle idea` to build `.iml` file.
-
-Use `gradle jar` to build a Jar with sources included.
+      server: http://widen.artifactoryonline.com/
+       group: widen
+    artifact: valet
+     version: 0.1
 
 Contact Uriah Carpenter (uriah at widen.com) with questions.
 
