@@ -14,6 +14,17 @@
 
 package com.widen.valet;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 import com.mycila.xmltool.XMLDoc;
 import com.mycila.xmltool.XMLDocumentException;
 import com.mycila.xmltool.XMLTag;
@@ -24,12 +35,11 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import static java.util.TimeZone.getTimeZone;
 
-import static java.util.TimeZone.*;
-
+/**
+ * Primary interface to interact with Route53.  See {@link com.widen.valet.examples.ValetExample} for usage example.
+ */
 public class Route53Driver
 {
 	private Logger log = LoggerFactory.getLogger(Route53Driver.class);
@@ -106,13 +116,13 @@ public class Route53Driver
 
 		String payload = xml.toString();
 
-		log.debug("Update Zone Post Payload:\n{}", payload);
+		log.trace("Update Zone Post Payload:\n{}", payload);
 
 		String responseText = pilot.executeResourceRecordSetsPost(zone.getExistentZoneId(), payload);
 
 		XMLTag result = XMLDoc.from(responseText, true);
 
-		log.debug("Update Zone Response:\n{}", result);
+		log.trace("Update Zone Response:\n{}", result);
 
 		if (result.hasTag("Error"))
 		{

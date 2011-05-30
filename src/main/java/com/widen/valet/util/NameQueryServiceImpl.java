@@ -7,6 +7,9 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Query service that uses org.xbill.DNS to directly query a nameserver -- bypassing the local OS resolver.
+ */
 public class NameQueryServiceImpl implements NameQueryService
 {
 	private Resolver resolver;
