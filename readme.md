@@ -15,6 +15,8 @@ Available via Maven:
 
 Or browse the repo directly at [https://widen.artifactoryonline.com/widen/libs-widen-public](https://widen.artifactoryonline.com/widen/libs-widen-public/widen/valet/)
 
+For new Route53 feature support, view the `develop` branch.
+
 Contact Uriah Carpenter (uriah at widen.com) with questions.
 
 Licensed under Apache, Version 2.0.
