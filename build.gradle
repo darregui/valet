@@ -4,7 +4,7 @@ apply plugin: 'idea'
 apply plugin: 'maven'
 
 group = 'widen'
-version = '0.1'
+version = '0.1.2'
 
 sourceCompatibility = 1.5
 targetCompatibility = 1.5
@@ -15,8 +15,8 @@ repositories {
 
 uploadArchives {
 	repositories.mavenDeployer {
-		repository(url: 'https://widen.artifactoryonline.com/widen/libs-widen-public') {
-			authentication(userName: USER, password: PASSWORD)
+		repository(url: 'http://10.101.0.202:8081/nexus/content/repositories/3rdparty') {
+			authentication(userName: 'darregui', password: 'darregui')
 		}
 	}
 }

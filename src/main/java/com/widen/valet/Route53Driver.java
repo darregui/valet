@@ -154,29 +154,35 @@ public class Route53Driver
 
     private ZoneChangeStatus parseChangeResourceRecordSetsResponse(String zoneId, XMLTag xml)
     {
-        XMLTag changeInfo = xml.gotoChild("ChangeInfo");
+        try {
+            XMLTag changeInfo = xml.gotoChild("ChangeInfo");
 
-        String changeId = StringUtils.substringAfter(changeInfo.getText("Id"), "/change/");
+            String changeId = StringUtils.substringAfter(changeInfo.getText("Id"), "/change/");
 
-        ZoneChangeStatus.Status status = ZoneChangeStatus.Status.valueOf(changeInfo.getText("Status"));
+            ZoneChangeStatus.Status status = ZoneChangeStatus.Status.valueOf(changeInfo.getText("Status"));
 
-        Date date = null;
+            Date date = null;
 
-        try
-        {
-            parseDate("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", changeInfo.getText("SubmittedAt"));
-        }
-        catch (ParseException e)
-        {
-            try {
-                parseDate("yyyy-MM-dd'T'HH:mm:ss'Z'", changeInfo.getText("SubmittedAt")) ;
+            try
+            {
+                date = parseDate("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", changeInfo.getText("SubmittedAt"));
             }
-            catch (ParseException e2) {
-                throw new RuntimeException(e2);
+            catch (ParseException e)
+            {
+                try {
+                    date = parseDate("yyyy-MM-dd'T'HH:mm:ss'Z'", changeInfo.getText("SubmittedAt")) ;
+                }
+                catch (ParseException e2) {
+                    throw new RuntimeException(e2);
+                }
             }
-        }
 
-        return new ZoneChangeStatus(zoneId, changeId, status, date);
+            return new ZoneChangeStatus(zoneId, changeId, status, date);
+        } catch (XMLDocumentException e)
+        {
+            // Document has no child 'ChangeInfo'
+            return new ZoneChangeStatus(zoneId, null, null, null);
+        }
     }
 
     private ValetException parseErrorResponse(XMLTag xml)
