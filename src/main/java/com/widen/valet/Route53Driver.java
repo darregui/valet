@@ -249,6 +249,11 @@ public class Route53Driver
 
             XMLTag xml = XMLDoc.from(result, true);
 
+            if (xml.hasTag("Error"))
+            {
+                throw parseErrorResponse(xml);
+            }
+
             if (xml.getText("//IsTruncated").equals("false"))
             {
                 readMore = false;
